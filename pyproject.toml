@@ -22,3 +22,23 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.17.1",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes (неиспользуемые импорты и переменные)
+    "I",  # isort (сортировка импортов)
+    "B",  # flake8-bugbear (поиск потенциальных багов)
+]
+ignore = [
+    "E501", # Длину строки контролирует форматтер, линтер может ругаться
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
