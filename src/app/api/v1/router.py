@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
+from src.app.api.v1.endpoints import auth
+
 api_router = APIRouter()
 
-# Здесь позже будут подключаться роутеры:
-# api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-# api_router.include_router(catalog.router, prefix="/catalog", tags=["catalog"])
+# Include routers
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
