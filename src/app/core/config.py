@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
 
-    # Security (Default is insecure, will be blocked in production)
+    # Security
     JWT_SECRET: str = "change_me_in_production"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "tg_shop"
     POSTGRES_PORT: int = 5432
+
+    # YooKassa
+    YUKASSA_SHOP_ID: str = ""
+    YUKASSA_SECRET_KEY: str = ""
+    YUKASSA_RETURN_URL: str = "http://localhost:3000/payment/return"
 
     @property
     def DATABASE_URL(self) -> str:
