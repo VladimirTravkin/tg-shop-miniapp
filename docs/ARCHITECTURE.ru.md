@@ -195,8 +195,9 @@ sequenceDiagram
 erDiagram
     USERS ||--o{ ORDERS : "создаёт"
     CATEGORIES ||--o{ PRODUCTS : "содержит"
+    PRODUCTS ||--|{ PRODUCT_VARIANTS : "имеет размеры"
     ORDERS ||--|{ ORDER_ITEMS : "включает"
-    PRODUCTS ||--o{ ORDER_ITEMS : "в заказе"
+    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "в заказе"
 
     USERS {
         bigint id PK
@@ -221,11 +222,16 @@ erDiagram
         string name
         text description
         numeric price "≥ 0, 2 знака"
-        int stock "≥ 0"
         string image_url
         bool is_active
         timestamptz created_at
         timestamptz updated_at
+    }
+    PRODUCT_VARIANTS {
+        bigint id PK
+        bigint product_id FK
+        string size "S, M, L, 42 и т.д."
+        int stock "≥ 0"
     }
     ORDERS {
         bigint id PK
@@ -245,6 +251,7 @@ erDiagram
         bigint order_id FK
         bigint product_id FK
         string product_name "снимок имени на момент заказа"
+        string variant_size "снимок размера на момент заказа"
         numeric price_at_purchase "снимок цены на момент заказа"
         int quantity
         numeric subtotal "price_at_purchase * quantity"
@@ -506,7 +513,8 @@ stateless-API и JWT позволяют добавить инстансы без
 | 9 | Единый обработчик переходов статусов | Защита от «статусного хаоса» и расхождений с платежами. |
 | 10 | Mermaid в документации | GitHub и VS Code рендерят нативно. Читается быстрее, не «плывёт». |
 | 11 | GitHub Actions (без автодеплоя) | CI ловит регрессии на каждом PR; деплой на MVP оставлен ручным — безопаснее и проще откатывать. |
-| 12 | Frontend: React + TS + Vite | Современный, масштабируемый стек. Экосистема React имеет готовые SDK для Telegram (`@tma.js`), а TypeScript снижает количество багов при росте проекта. ||
+| 12 | Frontend: React + TS + Vite | Современный, масштабируемый стек. Экосистема React имеет готовые SDK для Telegram (`@tma.js`), а TypeScript снижает количество багов при росте проекта. |
+| 13 | Отдельная таблица `product_variants` (SKU) для размеров | Хранение массива размеров в JSON-поле таблицы `products` | Позволяет вести точный учёт остатков для каждого размера отдельно. Упрощает добавление новых размеров и предотвращает продажу несуществующих остатков. |
 
 ---
 

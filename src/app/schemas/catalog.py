@@ -12,6 +12,15 @@ class CategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ProductVariantResponse(BaseModel):
+    """Schema for product variant (size) response."""
+    id: int
+    size: str
+    stock: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProductResponse(BaseModel):
     """Schema for product response."""
     id: int
@@ -19,8 +28,8 @@ class ProductResponse(BaseModel):
     name: str
     description: Optional[str] = None
     price: Decimal
-    stock: int
     image_url: Optional[str] = None
+    variants: List[ProductVariantResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
