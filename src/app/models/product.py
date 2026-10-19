@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy import (
     BigInteger,
@@ -29,7 +29,6 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    stock: Mapped[int] = mapped_column(Integer, default=0)
     image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -42,3 +41,8 @@ class Product(Base):
 
     # Relationships
     category: Mapped["Category"] = relationship("Category", lazy="selectin")
+
+    # Added relationship to variants
+    variants: Mapped[List["ProductVariant"]] = relationship(
+        "ProductVariant", back_populates="product", cascade="all, delete-orphan", lazy="selectin"
+    )

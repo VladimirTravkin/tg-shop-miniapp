@@ -27,9 +27,9 @@ async def create_order(
 ):
     """
     Create a new order.
-    Validates stock and recalculates prices on the server side.
+    Validates stock (variants) and recalculates prices on the server side.
     """
-    # 1. Fetch all requested products from DB
+    # 1. Fetch all requested products (with variants eagerly loaded)
     product_ids = [item.product_id for item in order_data.items]
     stmt = select(Product).where(
         Product.id.in_(product_ids),
@@ -51,24 +51,34 @@ async def create_order(
                 detail="Один из товаров больше не доступен. Пожалуйста, обновите корзину."
             )
 
-        if product.stock < item.quantity:
+        # Find the specific variant by size
+        variant = next((v for v in product.variants if v.size == item.size), None)
+
+        if not variant:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Товар '{product.name}' закончился. В наличии осталось: {product.stock} шт."
+                detail=f"Выбранный размер для товара '{product.name}' больше не доступен."
             )
 
-        # Calculate subtotal based on server-side price (security)
+        if variant.stock < item.quantity:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Товара '{product.name}' (размер {item.size}) осталось в наличии только {variant.stock} шт."
+            )
+
+        # Calculate subtotal
         subtotal = product.price * item.quantity
         total_amount += subtotal
 
-        # Deduct stock
-        product.stock -= item.quantity
+        # Deduct stock from variant
+        variant.stock -= item.quantity
 
         # Create order item snapshot
         order_items.append(
             OrderItem(
                 product_id=product.id,
                 product_name=product.name,
+                variant_size=item.size,
                 price_at_purchase=product.price,
                 quantity=item.quantity,
                 subtotal=subtotal

@@ -8,6 +8,7 @@ from src.app.models.order import OrderStatus
 class OrderItemCreate(BaseModel):
     """Schema for creating an order item."""
     product_id: int
+    size: str = Field(..., description="Product size (variant)")
     quantity: int = Field(..., gt=0, description="Quantity must be greater than 0")
 
 class OrderCreate(BaseModel):
@@ -21,6 +22,7 @@ class OrderItemResponse(BaseModel):
     """Schema for order item response."""
     product_id: int
     product_name: str
+    variant_size: str
     price_at_purchase: Decimal
     quantity: int
     subtotal: Decimal
