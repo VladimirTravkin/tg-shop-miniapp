@@ -7,17 +7,17 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-# --- НАШИ ИМПОРТЫ ---
+# --- PROJECT IMPORTS ---
 from src.app.core.config import settings
 from src.app.db.base import Base
-import src.app.models  # Важно: импортируем пакет с моделями, чтобы Alembic их увидел
-# --------------------
+import src.app.models  # Import models package so Alembic can detect them
+# -----------------------
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# Переопределяем URL базы данных из наших настроек (.env)
+# Override DB URL from our settings (.env)
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # Interpret the config file for Python logging.
