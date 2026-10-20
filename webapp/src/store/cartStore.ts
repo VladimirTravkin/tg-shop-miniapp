@@ -5,6 +5,7 @@ export interface CartItem {
     id: number;
     name: string;
     price: number;
+    size: string; // Added size
     quantity: number;
     image_url?: string;
 }
@@ -12,8 +13,8 @@ export interface CartItem {
 interface CartState {
     items: CartItem[];
     addItem: (item: CartItem) => void;
-    removeItem: (id: number) => void;
-    updateQuantity: (id: number, quantity: number) => void;
+    removeItem: (id: number, size: string) => void;
+    updateQuantity: (id: number, size: string, quantity: number) => void;
     clearCart: () => void;
     getTotalPrice: () => number;
 }
@@ -25,12 +26,15 @@ export const useCartStore = create<CartState>()(
 
             addItem: (item) => {
                 const { items } = get();
-                const existing = items.find((i) => i.id === item.id);
+                // Find by id AND size
+                const existing = items.find((i) => i.id === item.id && i.size === item.size);
 
                 if (existing) {
                     set({
                         items: items.map((i) =>
-                            i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i
+                            (i.id === item.id && i.size === item.size)
+                                ? { ...i, quantity: i.quantity + item.quantity }
+                                : i
                         ),
                     });
                 } else {
@@ -38,17 +42,19 @@ export const useCartStore = create<CartState>()(
                 }
             },
 
-            removeItem: (id) => {
-                set({ items: get().items.filter((i) => i.id !== id) });
+            removeItem: (id, size) => {
+                set({ items: get().items.filter((i) => !(i.id === id && i.size === size)) });
             },
 
-            updateQuantity: (id, quantity) => {
+            updateQuantity: (id, size, quantity) => {
                 if (quantity <= 0) {
-                    get().removeItem(id);
+                    get().removeItem(id, size);
                     return;
                 }
                 set({
-                    items: get().items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+                    items: get().items.map((i) =>
+                        (i.id === id && i.size === size) ? { ...i, quantity } : i
+                    ),
                 });
             },
 
