@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Link, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { CatalogPage } from './pages/CatalogPage';
-import { CartPage } from './pages/CartPage'; // Import CartPage
+import { CartPage } from './pages/CartPage';
+import { CheckoutPage } from './pages/CheckoutPage';
+import { authenticateTelegram } from './api/auth'; // Import auth function
 
 // Layout with Bottom Navigation
 function Layout() {
@@ -14,6 +16,9 @@ function Layout() {
       tg.ready();
       tg.expand();
     }
+
+    // Authenticate user on app load
+    authenticateTelegram();
   }, []);
 
   const navItems = [
@@ -68,7 +73,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<CatalogPage />} />
-          <Route path="cart" element={<CartPage />} /> {/* Use CartPage here */}
+          <Route path="cart" element={<CartPage />} />
+          <Route path="checkout" element={<CheckoutPage />} />
           <Route path="profile" element={<div style={{ padding: '20px' }}>Профиль (в разработке)</div>} />
         </Route>
       </Routes>
