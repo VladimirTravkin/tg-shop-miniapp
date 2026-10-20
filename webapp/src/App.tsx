@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { CatalogPage } from './pages/CatalogPage';
+import { CartPage } from './pages/CartPage'; // Import CartPage
 
 // Layout with Bottom Navigation
 function Layout() {
@@ -37,7 +38,8 @@ function Layout() {
         position: 'fixed', bottom: 0, left: 0, right: 0, height: '60px',
         display: 'flex', justifyContent: 'space-around', alignItems: 'center',
         backgroundColor: 'var(--tg-theme-secondary-bg-color, #f0f0f0)',
-        borderTop: '1px solid rgba(0,0,0,0.1)'
+        borderTop: '1px solid rgba(0,0,0,0.1)',
+        zIndex: 10
       }}>
         {navItems.map((item) => (
           <Link
@@ -45,13 +47,9 @@ function Layout() {
             to={item.path}
             style={{
               textDecoration: 'none',
-              // Hardcoded colors for guaranteed readability
               color: location.pathname === item.path ? '#2481cc' : '#000000',
-              fontWeight: location.pathname === item.path ? '600' : '400',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              fontSize: '12px'
+              fontWeight: location.pathname === item.path ? '600' : '500',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '12px'
             }}
           >
             <span style={{ fontSize: '20px' }}>{item.icon}</span>
@@ -70,7 +68,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<CatalogPage />} />
-          <Route path="cart" element={<div style={{ padding: '20px' }}>Корзина (в разработке)</div>} />
+          <Route path="cart" element={<CartPage />} /> {/* Use CartPage here */}
           <Route path="profile" element={<div style={{ padding: '20px' }}>Профиль (в разработке)</div>} />
         </Route>
       </Routes>
