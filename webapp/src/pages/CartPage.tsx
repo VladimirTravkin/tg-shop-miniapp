@@ -114,6 +114,20 @@ export function CartPage() {
                     <span>Итого:</span>
                     <span>{getTotalPrice().toLocaleString('ru-RU')} ₽</span>
                 </div>
+                <Link
+                    to="/"
+                    style={{
+                        display: 'block',
+                        textAlign: 'center',
+                        width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--tg-theme-button-color, #2481cc)',
+                        backgroundColor: 'transparent',
+                        color: 'var(--tg-theme-button-color, #2481cc)',
+                        fontWeight: '600', fontSize: '16px', cursor: 'pointer', marginBottom: '12px',
+                        textDecoration: 'none'
+                    }}
+                >
+                    Продолжить покупки
+                </Link>
                 <button
                     onClick={() => navigate('/checkout')}
                     style={{
