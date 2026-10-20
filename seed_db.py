@@ -32,21 +32,21 @@ async def seed_data():
             name="Футболка Oversize",
             description="Стильная черная футболка свободного кроя. Отлично подходит для повседневной носки.",
             price=Decimal("1990.00"),
-            image_url="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=600&auto=format&fit=crop",
+            image_url="/images/tshirt.jpg",
         )
         prod_jeans = Product(
             category_id=cat_clothes.id,
             name="Джинсы Slim Fit",
             description="Классические синие джинсы. Плотный деним, удобная посадка.",
             price=Decimal("3490.00"),
-            image_url="https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=600&auto=format&fit=crop",
+            image_url="/images/jeans.jpg",
         )
         prod_cap = Product(
             category_id=cat_accessories.id,
             name="Кепка с логотипом",
             description="Базовая черная кепка с регулируемым ремешком.",
             price=Decimal("1200.00"),
-            image_url="https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=600&auto=format&fit=crop",
+            image_url="/images/cap.jpg",
         )
 
         session.add_all([prod_tshirt, prod_jeans, prod_cap])
@@ -66,7 +66,7 @@ async def seed_data():
             ProductVariant(product_id=prod_jeans.id, size="32", stock=8),
             ProductVariant(product_id=prod_jeans.id, size="34", stock=7),
             # Cap (One Size)
-            ProductVariant(product_id=prod_cap.id, size="OS", stock=50),
+            ProductVariant(product_id=prod_cap.id, size="Единый размер", stock=50),
         ]
 
         session.add_all(variants)

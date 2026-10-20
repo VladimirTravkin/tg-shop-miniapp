@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import { CatalogPage } from './pages/CatalogPage';
 
 // Layout with Bottom Navigation
 function Layout() {
@@ -68,7 +69,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<div style={{ padding: '20px' }}>Каталог (в разработке)</div>} />
+          <Route index element={<CatalogPage />} />
           <Route path="cart" element={<div style={{ padding: '20px' }}>Корзина (в разработке)</div>} />
           <Route path="profile" element={<div style={{ padding: '20px' }}>Профиль (в разработке)</div>} />
         </Route>
