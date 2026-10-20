@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { CatalogPage } from './pages/CatalogPage';
 import { CartPage } from './pages/CartPage';
 import { CheckoutPage } from './pages/CheckoutPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { authenticateTelegram } from './api/auth'; // Import auth function
 
 // Layout with Bottom Navigation
@@ -75,7 +76,7 @@ export default function App() {
           <Route index element={<CatalogPage />} />
           <Route path="cart" element={<CartPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
-          <Route path="profile" element={<div style={{ padding: '20px' }}>Профиль (в разработке)</div>} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
       </Routes>
     </BrowserRouter>
