@@ -231,6 +231,8 @@ erDiagram
         bigint id PK
         bigint product_id FK
         string size "S, M, L, 42 и т.д."
+        string color "Белый, Черный и т.д."
+        string image_url "URL фото для этого цвета"
         int stock "≥ 0"
     }
     ORDERS {
@@ -252,6 +254,7 @@ erDiagram
         bigint product_id FK
         string product_name "снимок имени на момент заказа"
         string variant_size "снимок размера на момент заказа"
+        string variant_color "снимок цвета на момент заказа"
         numeric price_at_purchase "снимок цены на момент заказа"
         int quantity
         numeric subtotal "price_at_purchase * quantity"
@@ -516,6 +519,7 @@ stateless-API и JWT позволяют добавить инстансы без
 | 12 | Frontend: React + TS + Vite | Современный, масштабируемый стек. Экосистема React имеет готовые SDK для Telegram (`@tma.js`), а TypeScript снижает количество багов при росте проекта. |
 | 13 | Отдельная таблица `product_variants` (SKU) для размеров | Хранение массива размеров в JSON-поле таблицы `products` | Позволяет вести точный учёт остатков для каждого размера отдельно. Упрощает добавление новых размеров и предотвращает продажу несуществующих остатков. |
 | 14 | Адаптивная вёрстка (Mobile-First + CSS Grid) | Фиксированная мобильная сетка (только 2 колонки) | Telegram Mini Apps открываются не только на смартфонах, но и в Desktop/Web. Использование CSS Grid с `auto-fill` позволяет каталогу корректно перестраиваться под любую ширину экрана без дублирования кода. |
+| 15 | Привязка `image_url` к `ProductVariant` (SKU) | Хранение одной общей картинки в таблице `products` | Позволяет динамически менять фотографию товара при выборе цвета в карточке, что критически важно для визуального e-commerce и повышает конверсию. |
 
 ---
 
