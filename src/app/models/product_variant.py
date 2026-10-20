@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlalchemy import BigInteger, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -5,7 +6,7 @@ from src.app.db.base import Base
 
 
 class ProductVariant(Base):
-    """ProductVariant model representing a specific size/SKU of a product."""
+    """ProductVariant model representing a specific size/color SKU of a product."""
 
     __tablename__ = "product_variants"
 
@@ -14,6 +15,8 @@ class ProductVariant(Base):
         BigInteger, ForeignKey("products.id", ondelete="CASCADE")
     )
     size: Mapped[str] = mapped_column(String(50))
+    color: Mapped[str] = mapped_column(String(50), default="Стандарт")
+    image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True) # Added image_url
     stock: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
