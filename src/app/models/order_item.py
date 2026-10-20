@@ -19,6 +19,8 @@ class OrderItem(Base):
 
     # Snapshots to preserve history
     product_name: Mapped[str] = mapped_column(String(255))
+    variant_size: Mapped[str] = mapped_column(String(50))
+    variant_color: Mapped[str] = mapped_column(String(50)) # Added color
     price_at_purchase: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
     quantity: Mapped[int] = mapped_column(Integer)

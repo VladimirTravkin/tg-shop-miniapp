@@ -51,19 +51,22 @@ async def create_order(
                 detail="Один из товаров больше не доступен. Пожалуйста, обновите корзину."
             )
 
-        # Find the specific variant by size
-        variant = next((v for v in product.variants if v.size == item.size), None)
+        # Find the specific variant by size AND color
+        variant = next(
+            (v for v in product.variants if v.size == item.size and v.color == item.color),
+            None
+        )
 
         if not variant:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Выбранный размер для товара '{product.name}' больше не доступен."
+                detail=f"Выбранный цвет/размер для товара '{product.name}' больше не доступен."
             )
 
         if variant.stock < item.quantity:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Товара '{product.name}' (размер {item.size}) осталось в наличии только {variant.stock} шт."
+                detail=f"Товара '{product.name}' ({item.color}, {item.size}) осталось в наличии только {variant.stock} шт."
             )
 
         # Calculate subtotal
@@ -79,6 +82,7 @@ async def create_order(
                 product_id=product.id,
                 product_name=product.name,
                 variant_size=item.size,
+                variant_color=item.color,
                 price_at_purchase=product.price,
                 quantity=item.quantity,
                 subtotal=subtotal

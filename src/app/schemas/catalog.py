@@ -13,9 +13,11 @@ class CategoryResponse(BaseModel):
 
 
 class ProductVariantResponse(BaseModel):
-    """Schema for product variant (size) response."""
+    """Schema for product variant (size/color) response."""
     id: int
     size: str
+    color: str
+    image_url: Optional[str] = None
     stock: int
 
     model_config = ConfigDict(from_attributes=True)

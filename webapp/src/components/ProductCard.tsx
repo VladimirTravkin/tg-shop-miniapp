@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCartStore } from '../store/cartStore';
 
 // Interface matching the backend response
 export interface ProductVariant {
     id: number;
     size: string;
+    color: string;
+    image_url: string | null;
     stock: number;
 }
 
@@ -13,7 +15,7 @@ export interface Product {
     category_id: number;
     name: string;
     description: string | null;
-    price: string; // Decimal comes as string from FastAPI
+    price: string;
     image_url: string | null;
     variants: ProductVariant[];
 }
@@ -23,14 +25,35 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+    const [selectedColor, setSelectedColor] = useState<string>('');
     const [selectedSize, setSelectedSize] = useState<string>('');
     const addItem = useCartStore((state) => state.addItem);
 
-    // Filter out sizes that are out of stock
-    const availableVariants = product.variants.filter(v => v.stock > 0);
+    // Get unique colors that have at least one variant in stock
+    const availableColors = Array.from(
+        new Set(product.variants.filter(v => v.stock > 0).map(v => v.color))
+    );
+
+    // Get available sizes for the selected color
+    const availableSizes = product.variants
+        .filter(v => v.color === selectedColor && v.stock > 0)
+        .map(v => v.size);
+
+    // Determine current image based on selected color
+    const currentVariant = product.variants.find(v => v.color === selectedColor);
+    const displayImage = currentVariant?.image_url || product.image_url;
+
+    // Reset size when color changes
+    useEffect(() => {
+        setSelectedSize('');
+    }, [selectedColor]);
 
     const handleAddToCart = () => {
-        if (availableVariants.length > 0 && !selectedSize) {
+        if (availableColors.length > 0 && !selectedColor) {
+            alert('Пожалуйста, выберите цвет');
+            return;
+        }
+        if (availableSizes.length > 0 && !selectedSize) {
             alert('Пожалуйста, выберите размер');
             return;
         }
@@ -39,12 +62,14 @@ export function ProductCard({ product }: ProductCardProps) {
             id: product.id,
             name: product.name,
             price: Number(product.price),
-            size: selectedSize || 'OS', // Default to One Size if no variants
+            color: selectedColor || 'Стандарт',
+            size: selectedSize || 'Единый размер',
             quantity: 1,
-            image_url: product.image_url || undefined,
+            image_url: displayImage || undefined,
         });
 
-        // Optional: Add some visual feedback here later
+        // Reset selections after adding
+        setSelectedColor('');
         setSelectedSize('');
     };
 
@@ -59,9 +84,9 @@ export function ProductCard({ product }: ProductCardProps) {
         }}>
             {/* Image */}
             <div style={{ height: '180px', backgroundColor: '#f0f0f0' }}>
-                {product.image_url ? (
+                {displayImage ? (
                     <img
-                        src={product.image_url}
+                        src={displayImage}
                         alt={product.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
@@ -86,8 +111,26 @@ export function ProductCard({ product }: ProductCardProps) {
                     {Number(product.price).toLocaleString('ru-RU')} ₽
                 </div>
 
-                {/* Size Selector */}
-                {availableVariants.length > 0 && (
+                {/* Color Selector */}
+                {availableColors.length > 0 && (
+                    <select
+                        value={selectedColor}
+                        onChange={(e) => setSelectedColor(e.target.value)}
+                        style={{
+                            width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '8px',
+                            border: '1px solid #ccc', backgroundColor: 'var(--tg-theme-bg-color, #fff)',
+                            color: 'var(--tg-theme-text-color, #000)', fontSize: '14px'
+                        }}
+                    >
+                        <option value="" disabled>Выберите цвет</option>
+                        {availableColors.map(color => (
+                            <option key={color} value={color}>{color}</option>
+                        ))}
+                    </select>
+                )}
+
+                {/* Size Selector (only shown if color is selected or if no colors exist) */}
+                {(selectedColor || availableColors.length === 0) && availableSizes.length > 0 && (
                     <select
                         value={selectedSize}
                         onChange={(e) => setSelectedSize(e.target.value)}
@@ -98,8 +141,8 @@ export function ProductCard({ product }: ProductCardProps) {
                         }}
                     >
                         <option value="" disabled>Выберите размер</option>
-                        {availableVariants.map(v => (
-                            <option key={v.id} value={v.size}>{v.size}</option>
+                        {availableSizes.map(size => (
+                            <option key={size} value={size}>{size}</option>
                         ))}
                     </select>
                 )}

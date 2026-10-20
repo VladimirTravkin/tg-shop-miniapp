@@ -10,7 +10,7 @@ from src.app.models.product_variant import ProductVariant
 
 async def seed_data():
     async with async_session_maker() as session:
-        # Clear existing data to avoid duplicates/errors during dev
+        # Clear existing data
         await session.execute(delete(ProductVariant))
         await session.execute(delete(Product))
         await session.execute(delete(Category))
@@ -26,27 +26,27 @@ async def seed_data():
         await session.refresh(cat_clothes)
         await session.refresh(cat_accessories)
 
-        # Create Products
+        # Create Products (Base info)
         prod_tshirt = Product(
             category_id=cat_clothes.id,
             name="Футболка Oversize",
-            description="Стильная черная футболка свободного кроя. Отлично подходит для повседневной носки.",
+            description="Стильная футболка свободного кроя. Отлично подходит для повседневной носки.",
             price=Decimal("1990.00"),
-            image_url="/images/tshirt.jpg",
+            image_url="/images/tshirt_white.jpg", # Default image
         )
         prod_jeans = Product(
             category_id=cat_clothes.id,
             name="Джинсы Slim Fit",
-            description="Классические синие джинсы. Плотный деним, удобная посадка.",
+            description="Классические джинсы. Плотный деним, удобная посадка.",
             price=Decimal("3490.00"),
-            image_url="/images/jeans.jpg",
+            image_url="/images/jeans_blue.jpg", # Default image
         )
         prod_cap = Product(
             category_id=cat_accessories.id,
             name="Кепка с логотипом",
-            description="Базовая черная кепка с регулируемым ремешком.",
+            description="Базовая кепка с регулируемым ремешком.",
             price=Decimal("1200.00"),
-            image_url="/images/cap.jpg",
+            image_url="/images/cap_white.jpg",
         )
 
         session.add_all([prod_tshirt, prod_jeans, prod_cap])
@@ -55,18 +55,23 @@ async def seed_data():
         await session.refresh(prod_jeans)
         await session.refresh(prod_cap)
 
-        # Create Product Variants (Sizes and Stock)
+        # Create Product Variants (Sizes, Colors, Images and Stock)
         variants = [
-            # T-Shirt
-            ProductVariant(product_id=prod_tshirt.id, size="S", stock=10),
-            ProductVariant(product_id=prod_tshirt.id, size="M", stock=20),
-            ProductVariant(product_id=prod_tshirt.id, size="L", stock=15),
-            # Jeans
-            ProductVariant(product_id=prod_jeans.id, size="30", stock=5),
-            ProductVariant(product_id=prod_jeans.id, size="32", stock=8),
-            ProductVariant(product_id=prod_jeans.id, size="34", stock=7),
+            # T-Shirt (White)
+            ProductVariant(product_id=prod_tshirt.id, size="S", color="Белый", image_url="/images/tshirt_white.jpg", stock=10),
+            ProductVariant(product_id=prod_tshirt.id, size="M", color="Белый", image_url="/images/tshirt_white.jpg", stock=20),
+            ProductVariant(product_id=prod_tshirt.id, size="L", color="Белый", image_url="/images/tshirt_white.jpg", stock=15),
+            # T-Shirt (Black)
+            ProductVariant(product_id=prod_tshirt.id, size="M", color="Черный", image_url="/images/tshirt_black.jpg", stock=5),
+
+            # Jeans (Blue)
+            ProductVariant(product_id=prod_jeans.id, size="30", color="Синий", image_url="/images/jeans_blue.jpg", stock=5),
+            ProductVariant(product_id=prod_jeans.id, size="32", color="Синий", image_url="/images/jeans_blue.jpg", stock=8),
+            # Jeans (Black)
+            ProductVariant(product_id=prod_jeans.id, size="32", color="Черный", image_url="/images/jeans_black.jpg", stock=4),
+
             # Cap (One Size)
-            ProductVariant(product_id=prod_cap.id, size="Единый размер", stock=50),
+            ProductVariant(product_id=prod_cap.id, size="Единый размер", color="Белый", image_url="/images/cap_white.jpg", stock=50),
         ]
 
         session.add_all(variants)
