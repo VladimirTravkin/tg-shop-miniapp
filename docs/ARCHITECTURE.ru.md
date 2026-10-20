@@ -523,6 +523,18 @@ stateless-API и JWT позволяют добавить инстансы без
 
 ---
 
+## 11. Тестирование вебхуков локально
+
+Для проверки уведомлений от ЮKassa на локальной машине используется туннель **Tuna** (так как ngrok и Cloudflare могут блокироваться в РФ).
+
+1. Установите Tuna: `winget install --id yuccastream.tuna -e`
+2. Авторизуйтесь: `tuna config save-token <ваш_токен>`
+3. Запустите туннель к бэкенду: `tuna http 8000`
+4. Скопируйте публичный URL (например, `https://xxxx.ru.tuna.am`) и укажите его в ЮKassa (Интеграция -> HTTP-уведомления) с суффиксом `/api/v1/webhooks/yukassa`.
+5. Проведите тестовый платеж. В окне Tuna и в логах бэкенда появится запрос `POST /api/v1/webhooks/yukassa` со статусом `200 OK`.
+
+---
+
 ## Приложение. Ссылки
 
 - Telegram Mini Apps: <https://core.telegram.org/bots/webapps>
