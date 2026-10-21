@@ -38,7 +38,12 @@ select = [
 ]
 ignore = [
     "E501", # Длину строки контролирует форматтер, линтер может ругаться
+    "B008", # Do not perform function call in argument defaults (норма для FastAPI Depends)
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.ruff.lint.per-file-ignores]
+# Отключаем проверку неопределенных имен в моделях (SQLAlchemy использует строковые ссылки)
+"src/app/models/*" = ["F821"]

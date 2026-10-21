@@ -4,7 +4,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.app.api.deps import get_current_user
 from src.app.core.config import settings
 from src.app.core.limiter import limiter
@@ -68,7 +67,7 @@ async def auth_telegram(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e)
-        )
+        ) from e
 
 
 @router.get("/me")

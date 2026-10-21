@@ -1,8 +1,10 @@
 import asyncio
+
 from sqlalchemy import select
+from src.app.core.security import create_access_token
 from src.app.db.session import async_session_maker
 from src.app.models.user import User
-from src.app.core.security import create_access_token
+
 
 async def main():
     async with async_session_maker() as session:

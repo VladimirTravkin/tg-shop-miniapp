@@ -12,7 +12,7 @@ function Layout() {
 
   useEffect(() => {
     // Initialize Telegram WebApp
-    const tg = (window as any).Telegram?.WebApp;
+    const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();

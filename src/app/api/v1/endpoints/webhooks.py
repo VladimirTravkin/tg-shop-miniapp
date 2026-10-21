@@ -1,13 +1,11 @@
 from datetime import datetime, timezone
-from typing import Any, Dict
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.app.core.yookassa import yookassa_client
 from src.app.core.order_status import transition_status
+from src.app.core.yookassa import yookassa_client
 from src.app.db.session import get_db
 from src.app.models.order import Order, OrderStatus
 
@@ -26,7 +24,7 @@ async def yukassa_webhook(
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        raise HTTPException(status_code=400, detail="Invalid JSON") from None
 
     event = payload.get("event")
     payment_object = payload.get("object", {})
@@ -40,7 +38,7 @@ async def yukassa_webhook(
         try:
             actual_payment = await yookassa_client.get_payment(payment_id)
         except httpx.HTTPError:
-            raise HTTPException(status_code=502, detail="Failed to verify payment")
+            raise HTTPException(status_code=502, detail="Failed to verify payment") from None
 
         if actual_payment.get("status") != "succeeded":
             return {"status": "ignored"}

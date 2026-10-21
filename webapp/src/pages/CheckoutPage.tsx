@@ -58,17 +58,18 @@ export function CheckoutPage() {
             const confirmationUrl = paymentResponse.data.confirmation_url;
 
             // In Telegram Mini App, it's better to use openLink, but for web testing we use location.href
-            const tg = (window as any).Telegram?.WebApp;
+            const tg = window.Telegram?.WebApp;
             if (tg) {
                 tg.openLink(confirmationUrl);
             } else {
                 window.location.href = confirmationUrl;
             }
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            // Extract error message from backend if available
-            const message = err.response?.data?.detail || 'Произошла ошибка при оформлении заказа. Попробуйте позже.';
+            // Safely extract error message from backend if available
+            const axiosError = err as { response?: { data?: { detail?: string } } };
+            const message = axiosError.response?.data?.detail || 'Произошла ошибка при оформлении заказа. Попробуйте позже.';
             setError(message);
             setLoading(false);
         }

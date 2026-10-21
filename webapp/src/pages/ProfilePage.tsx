@@ -180,10 +180,11 @@ export function ProfilePage() {
             try {
                 const data = await fetchUserOrders();
                 if (!cancelled) setOrders(data);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error(err);
                 if (!cancelled) {
-                    const message = err.response?.status === 401
+                    const axiosError = err as { response?: { status?: number } };
+                    const message = axiosError.response?.status === 401
                         ? 'Требуется авторизация через Telegram.'
                         : 'Не удалось загрузить историю заказов. Попробуйте позже.';
                     setError(message);

@@ -3,7 +3,6 @@ from typing import Optional
 
 from sqlalchemy import BigInteger, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column
-
 from src.app.db.base import Base
 
 

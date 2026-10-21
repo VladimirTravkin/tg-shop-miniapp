@@ -3,7 +3,6 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.app.db.session import get_db
 from src.app.models.category import Category
 from src.app.models.product import Product
@@ -25,7 +24,7 @@ async def get_categories(
     """
     stmt = (
         select(Category)
-        .where(Category.is_active == True)
+        .where(Category.is_active)
         .order_by(Category.sort_order, Category.id)
     )
     result = await db.execute(stmt)
@@ -44,7 +43,7 @@ async def get_products(
     Get list of active products with pagination and optional category filter.
     """
     # Base query for filtering
-    base_stmt = select(Product).where(Product.is_active == True)
+    base_stmt = select(Product).where(Product.is_active)
     if category_id is not None:
         base_stmt = base_stmt.where(Product.category_id == category_id)
 
@@ -71,7 +70,7 @@ async def get_product(
     """
     stmt = select(Product).where(
         Product.id == product_id,
-        Product.is_active == True
+        Product.is_active
     )
     result = await db.execute(stmt)
     product = result.scalar_one_or_none()

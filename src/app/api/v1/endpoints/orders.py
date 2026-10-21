@@ -4,7 +4,6 @@ from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.app.api.deps import get_current_user
 from src.app.core.limiter import limiter
 from src.app.db.session import get_db
@@ -33,7 +32,7 @@ async def create_order(
     product_ids = [item.product_id for item in order_data.items]
     stmt = select(Product).where(
         Product.id.in_(product_ids),
-        Product.is_active == True
+        Product.is_active
     )
     result = await db.execute(stmt)
     products = {p.id: p for p in result.scalars().all()}

@@ -1,7 +1,7 @@
 import asyncio
 from decimal import Decimal
 
-from sqlalchemy import select, delete
+from sqlalchemy import delete
 from src.app.db.session import async_session_maker
 from src.app.models.category import Category
 from src.app.models.product import Product

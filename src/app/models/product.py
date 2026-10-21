@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, List
+from typing import List, Optional
 
 from sqlalchemy import (
     BigInteger,
@@ -14,7 +14,6 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from src.app.db.base import Base
 
 

@@ -5,7 +5,6 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.app.core.config import settings
 from src.app.db.session import get_db
 from src.app.models.user import User
@@ -38,7 +37,7 @@ async def get_current_user(
         if user_id is None:
             raise credentials_exception
     except jwt.PyJWTError:
-        raise credentials_exception
+        raise credentials_exception from None
 
     # Fetch user from DB
     stmt = select(User).where(User.id == int(user_id))

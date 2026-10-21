@@ -6,7 +6,6 @@ from typing import Any
 from urllib.parse import parse_qsl
 
 import jwt
-
 from src.app.core.config import settings
 
 

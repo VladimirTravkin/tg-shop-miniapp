@@ -9,7 +9,7 @@ interface AuthResponse {
 export const authenticateTelegram = async (): Promise<boolean> => {
     try {
         // 1. Get initData from Telegram WebApp SDK
-        const tg = (window as any).Telegram?.WebApp;
+        const tg = window.Telegram?.WebApp;
         const initData = tg?.initData;
 
         if (!initData) {

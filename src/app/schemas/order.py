@@ -1,9 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field
 
+from pydantic import BaseModel, ConfigDict, Field
 from src.app.models.order import OrderStatus
+
 
 class OrderItemCreate(BaseModel):
     """Schema for creating an order item."""

@@ -4,7 +4,6 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.app.api.deps import get_current_user
 from src.app.core.yookassa import yookassa_client
 from src.app.db.session import get_db
@@ -56,7 +55,7 @@ async def create_payment(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Ошибка платёжной системы. Попробуйте позже."
-        )
+        ) from None
 
     # 4. Save YooKassa payment_id to the order
     order.payment_id = payment_info["id"]

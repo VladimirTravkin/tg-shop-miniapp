@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-
 from src.app.api.v1.endpoints import auth, catalog, orders, payments, webhooks
 
 api_router = APIRouter()

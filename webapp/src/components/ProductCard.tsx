@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCartStore } from '../store/cartStore';
 
 // Interface matching the backend response
@@ -42,11 +42,6 @@ export function ProductCard({ product }: ProductCardProps) {
     // Determine current image based on selected color
     const currentVariant = product.variants.find(v => v.color === selectedColor);
     const displayImage = currentVariant?.image_url || product.image_url;
-
-    // Reset size when color changes
-    useEffect(() => {
-        setSelectedSize('');
-    }, [selectedColor]);
 
     const handleAddToCart = () => {
         if (availableColors.length > 0 && !selectedColor) {
@@ -115,7 +110,10 @@ export function ProductCard({ product }: ProductCardProps) {
                 {availableColors.length > 0 && (
                     <select
                         value={selectedColor}
-                        onChange={(e) => setSelectedColor(e.target.value)}
+                        onChange={(e) => {
+                            setSelectedColor(e.target.value);
+                            setSelectedSize('');
+                        }}
                         style={{
                             width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '8px',
                             border: '1px solid #ccc', backgroundColor: 'var(--tg-theme-bg-color, #fff)',
