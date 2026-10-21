@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+*.pyc
+.env
+.env.*
+!.env.example
+node_modules
+dist
+migrations/versions/*.pyc
+docs/
+webapp/node_modules
+webapp/dist
+cloudflared.exe
