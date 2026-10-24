@@ -13,24 +13,21 @@ A full-stack E-commerce Telegram Mini App. The project features a product catalo
 
 ## 📖 About The Project
 
-The project is built with a focus on security and modern development standards. Authentication is handled via Telegram WebApp `initData` validation using HMAC-SHA256. The backend is fully asynchronous, and the infrastructure is containerized with Docker for easy deployment.
+The project is built with a focus on security and modern development standards. Authentication is handled via Telegram WebApp `initData` validation using HMAC-SHA256. For the desktop version, a secure login via Telegram Login Widget is implemented. The backend is fully asynchronous, and the infrastructure is containerized with Docker for easy deployment.
 
 ## 🎥 Demo
 
-> *A GIF demonstration of the app (Catalog -> Cart -> Checkout) will be placed here.*
-> *(To add it, record your screen, save it as `demo.gif` in the `docs/images/` folder, and uncomment the line below)*
-
-<!-- ![Demo](docs/images/demo.gif) -->
+![Demo](docs/images/demo.gif)
 
 ## 📸 Screenshots
 
-> *UI Screenshots (will be added after final UI polishing).*
+| Catalog | Cart |
+| :---: | :---: |
+| ![Catalog](docs/images/catalog.jpg) | ![Cart](docs/images/cart.jpg) |
 
-<!--
-| Catalog | Cart | Profile |
-| :---: | :---: | :---: |
-| ![Catalog](docs/images/catalog.png) | ![Cart](docs/images/cart.png) | ![Profile](docs/images/profile.png) |
--->
+| Checkout | Profile |
+| :---: | :---: |
+| ![Checkout](docs/images/checkout.jpg) | ![Profile](docs/images/profile.jpg) |
 
 ## 📂 Project Structure
 
@@ -55,18 +52,18 @@ tg-shop-miniapp/
 
 - **Backend:** Python 3.11, FastAPI, SQLAlchemy 2.0 (async), Alembic, PostgreSQL.
 - **Frontend:** React 19, TypeScript, Vite, Zustand (state management), Axios.
-- **Infrastructure:** Docker, Docker Compose, Nginx (reverse proxy & static serving).
+- **Infrastructure:** Docker, Docker Compose, Nginx (reverse proxy & static serving), Certbot.
 - **Testing & CI:** Pytest, Ruff (linter), GitHub Actions.
 
 ## ✨ Features
 
-- [x] **Authentication:** Secure login via Telegram `initData` (HMAC).
+- [x] **Authentication:** Secure login via Telegram `initData` (HMAC) and Login Widget.
 - [x] **Catalog:** Product display with variants (colors, sizes).
 - [x] **Cart:** Add, update quantity, persist in `localStorage`.
 - [x] **Checkout:** User data validation, order creation.
 - [x] **Payments:** YooKassa integration (payment creation, webhooks).
-- [x] **Profile:** Order history with status tracking.
-- [x] **Infrastructure:** Docker-compose environment, Nginx reverse-proxy.
+- [x] **Profile:** Order history with status auto-refresh.
+- [x] **Infrastructure:** Docker-compose environment, Nginx reverse-proxy, SSL.
 - [x] **CI/CD:** GitHub Actions configured (linters, build, tests).
 
 ## ⚙️ Environment Variables
@@ -79,9 +76,9 @@ To run the application, you need to create a `.env` file in the root directory (
 | `POSTGRES_PASSWORD` | Database password | `mysecretpassword` |
 | `POSTGRES_DB` | Database name | `tg_shop` |
 | `JWT_SECRET` | Secret key for JWT signing | `super_secret_random_string` |
-| `TELEGRAM_BOT_TOKEN` | Your bot token from BotFather | `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11` |
-| `YOOKASSA_SHOP_ID` | YooKassa Shop ID | `123456` |
-| `YOOKASSA_SECRET_KEY` | YooKassa Secret Key | `test_abc123...` |
+| `TELEGRAM_BOT_TOKEN` | Your bot token from BotFather | `123456:ABC-DEF...` |
+| `YUKASSA_SHOP_ID` | YooKassa Shop ID | `123456` |
+| `YUKASSA_SECRET_KEY` | YooKassa Secret Key | `test_abc123...` |
 
 ## 🛠️ Quick Start (Docker)
 
@@ -125,8 +122,9 @@ uv run pytest -v
 ## 🤝 Contact
 
 If you have any questions or suggestions, feel free to reach out:
-- **Telegram:** [@YOUR_TELEGRAM_USERNAME](https://t.me/YOUR_TELEGRAM_USERNAME)
-- **GitHub:** [YOUR_GITHUB_USERNAME](https://github.com/YOUR_GITHUB_USERNAME)
+- **Telegram:** [@TravkinVladimir](https://t.me/TravkinVladimir)
+- **GitHub:** [@VladimirTravkin](https://github.com/VladimirTravkin)
+- **Email:** [vpro68@mail.ru](mailto:vpro68@mail.ru)
 
 ## 📄 License
 

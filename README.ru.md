@@ -13,24 +13,21 @@
 
 ## 📖 О проекте
 
-Проект разработан с упором на безопасность и современные стандарты разработки. Авторизация происходит через валидацию `initData` от Telegram WebApp с использованием HMAC-SHA256. Бэкенд полностью асинхронный, а инфраструктура упакована в Docker-контейнеры для легкого развертывания.
+Проект разработан с упором на безопасность и современные стандарты разработки. Авторизация происходит через валидацию `initData` от Telegram WebApp с использованием HMAC-SHA256. Для десктопной версии реализован безопасный вход через Telegram Login Widget. Бэкенд полностью асинхронный, а инфраструктура упакована в Docker-контейнеры для легкого развертывания.
 
-## 🎥 Демонстрация (Demo)
+## 🎥 Демонстрация
 
-> *Здесь будет GIF-демонстрация работы приложения (Каталог -> Корзина -> Оплата).*
-> *(Чтобы добавить GIF, запишите экран, сохраните как `demo.gif` в папку `docs/images/` и раскомментируйте строку ниже)*
-
-<!-- ![Demo](docs/images/demo.gif) -->
+![Demo](docs/images/demo.gif)
 
 ## 📸 Скриншоты
 
-> *Скриншоты интерфейса (будут добавлены после финального UI-полишинга).*
+| Каталог | Корзина |
+| :---: | :---: |
+| ![Каталог](docs/images/catalog.jpg) | ![Корзина](docs/images/cart.jpg) |
 
-<!--
-| Каталог | Корзина | Профиль |
-| :---: | :---: | :---: |
-| ![Каталог](docs/images/catalog.png) | ![Корзина](docs/images/cart.png) | ![Профиль](docs/images/profile.png) |
--->
+| Оформление заказа | Профиль |
+| :---: | :---: |
+| ![Оформление](docs/images/checkout.jpg) | ![Профиль](docs/images/profile.jpg) |
 
 ## 📂 Структура проекта
 
@@ -55,18 +52,18 @@ tg-shop-miniapp/
 
 - **Бэкенд:** Python 3.11, FastAPI, SQLAlchemy 2.0 (async), Alembic, PostgreSQL.
 - **Фронтенд:** React 19, TypeScript, Vite, Zustand (стейт-менеджер), Axios.
-- **Инфраструктура:** Docker, Docker Compose, Nginx (прокси и раздача статики).
+- **Инфраструктура:** Docker, Docker Compose, Nginx (прокси и раздача статики), Certbot.
 - **Тестирование и CI:** Pytest, Ruff (линтер), GitHub Actions.
 
 ## ✨ Реализованный функционал
 
-- [x] **Авторизация:** Безопасный вход через Telegram `initData` (HMAC).
+- [x] **Авторизация:** Безопасный вход через Telegram `initData` (HMAC) и Login Widget.
 - [x] **Каталог:** Отображение товаров с вариантами (цвета, размеры).
 - [x] **Корзина:** Добавление, изменение количества, сохранение в `localStorage`.
 - [x] **Оформление заказа:** Валидация данных пользователя, создание заказа.
 - [x] **Платежи:** Интеграция с ЮKassa (создание платежа, вебхуки).
-- [x] **Личный кабинет:** История заказов с трекингом статусов.
-- [x] **Инфраструктура:** Docker-compose окружение, Nginx reverse-proxy.
+- [x] **Личный кабинет:** История заказов с автообновлением статусов.
+- [x] **Инфраструктура:** Docker-compose окружение, Nginx reverse-proxy, SSL.
 - [x] **CI/CD:** Настроен GitHub Actions (линтеры, сборка, тесты).
 
 ## ⚙️ Переменные окружения
@@ -79,9 +76,9 @@ tg-shop-miniapp/
 | `POSTGRES_PASSWORD` | Пароль БД | `mysecretpassword` |
 | `POSTGRES_DB` | Название базы данных | `tg_shop` |
 | `JWT_SECRET` | Секретный ключ для подписи JWT | `super_secret_random_string` |
-| `TELEGRAM_BOT_TOKEN` | Токен вашего бота от BotFather | `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11` |
-| `YOOKASSA_SHOP_ID` | ID магазина в ЮKassa | `123456` |
-| `YOOKASSA_SECRET_KEY` | Секретный ключ ЮKassa | `test_abc123...` |
+| `TELEGRAM_BOT_TOKEN` | Токен вашего бота от BotFather | `123456:ABC-DEF...` |
+| `YUKASSA_SHOP_ID` | ID магазина в ЮKassa | `123456` |
+| `YUKASSA_SECRET_KEY` | Секретный ключ ЮKassa | `test_abc123...` |
 
 ## 🛠️ Быстрый запуск (Docker)
 
@@ -125,8 +122,9 @@ uv run pytest -v
 ## 🤝 Контакты и Обратная связь
 
 Если у вас есть вопросы или предложения, свяжитесь со мной:
-- **Telegram:** [@YOUR_TELEGRAM_USERNAME](https://t.me/YOUR_TELEGRAM_USERNAME)
-- **GitHub:** [YOUR_GITHUB_USERNAME](https://github.com/YOUR_GITHUB_USERNAME)
+- **Telegram:** [@TravkinVladimir](https://t.me/TravkinVladimir)
+- **GitHub:** [@VladimirTravkin](https://github.com/VladimirTravkin)
+- **Email:** [vpro68@mail.ru](mailto:vpro68@mail.ru)
 
 ## 📄 Лицензия
 
