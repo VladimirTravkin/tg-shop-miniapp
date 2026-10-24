@@ -61,6 +61,8 @@ export function CheckoutPage() {
             const tg = window.Telegram?.WebApp;
             if (tg) {
                 tg.openLink(confirmationUrl);
+                // Перенаправляем в профиль, чтобы при возврате из ЮKassa не видеть застывшую форму
+                navigate('/profile');
             } else {
                 window.location.href = confirmationUrl;
             }

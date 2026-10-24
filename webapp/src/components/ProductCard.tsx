@@ -27,6 +27,7 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
     const [selectedColor, setSelectedColor] = useState<string>('');
     const [selectedSize, setSelectedSize] = useState<string>('');
+    const [cardError, setCardError] = useState<string | null>(null);
     const addItem = useCartStore((state) => state.addItem);
 
     // Get unique colors that have at least one variant in stock
@@ -45,11 +46,11 @@ export function ProductCard({ product }: ProductCardProps) {
 
     const handleAddToCart = () => {
         if (availableColors.length > 0 && !selectedColor) {
-            alert('Пожалуйста, выберите цвет');
+            setCardError('Пожалуйста, выберите цвет');
             return;
         }
         if (availableSizes.length > 0 && !selectedSize) {
-            alert('Пожалуйста, выберите размер');
+            setCardError('Пожалуйста, выберите размер');
             return;
         }
 
@@ -66,6 +67,7 @@ export function ProductCard({ product }: ProductCardProps) {
         // Reset selections after adding
         setSelectedColor('');
         setSelectedSize('');
+        setCardError(null);
     };
 
     return (
@@ -143,6 +145,13 @@ export function ProductCard({ product }: ProductCardProps) {
                             <option key={size} value={size}>{size}</option>
                         ))}
                     </select>
+                )}
+
+                {/* Error message */}
+                {cardError && (
+                    <div style={{ color: '#d8000c', fontSize: '12px', marginBottom: '8px', textAlign: 'center' }}>
+                        {cardError}
+                    </div>
                 )}
 
                 {/* Add Button */}

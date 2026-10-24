@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 
 
 class AuthRequest(BaseModel):
@@ -11,3 +12,14 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user_id: int
+
+
+class WidgetAuthRequest(BaseModel):
+    """Schema for Telegram Login Widget data."""
+    id: int
+    first_name: str
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
+    auth_date: int
+    hash: str

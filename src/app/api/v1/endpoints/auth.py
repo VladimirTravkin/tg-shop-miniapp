@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.api.deps import get_current_user
 from src.app.core.config import settings
 from src.app.core.limiter import limiter
-from src.app.core.security import create_access_token, validate_init_data
+from src.app.core.security import create_access_token, validate_init_data, validate_widget_data
 from src.app.db.session import get_db
 from src.app.models.user import User
-from src.app.schemas.auth import AuthRequest, AuthResponse
+from src.app.schemas.auth import AuthRequest, AuthResponse, WidgetAuthRequest
 
 router = APIRouter()
 
@@ -82,3 +82,55 @@ async def read_users_me(
         "telegram_id": current_user.telegram_id,
         "username": current_user.username
     }
+
+
+@router.post("/widget", response_model=AuthResponse)
+@limiter.limit("10/minute")
+async def auth_widget(
+    request: Request,
+    auth_data: WidgetAuthRequest,
+    db: Annotated[AsyncSession, Depends(get_db)]
+):
+    """
+    Authenticate user via Telegram Login Widget.
+    """
+    try:
+        # 1. Validate widget data (HMAC check)
+        data = auth_data.model_dump()
+        validated_data = validate_widget_data(data, settings.TELEGRAM_BOT_TOKEN)
+
+        telegram_id = validated_data["id"]
+
+        # 2. Check if user exists
+        stmt = select(User).where(User.telegram_id == telegram_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            # Create new user
+            user = User(
+                telegram_id=telegram_id,
+                username=validated_data.get("username"),
+                first_name=validated_data.get("first_name", ""),
+                last_name=validated_data.get("last_name"),
+                language_code="ru", # Default for widget
+            )
+            db.add(user)
+        else:
+            # Update existing user data
+            user.username = validated_data.get("username")
+            user.first_name = validated_data.get("first_name", "")
+            user.last_name = validated_data.get("last_name")
+
+        await db.commit()
+        await db.refresh(user)
+
+        # 3. Generate JWT
+        access_token = create_access_token(subject=user.id)
+        return AuthResponse(access_token=access_token, user_id=user.id)
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        ) from e

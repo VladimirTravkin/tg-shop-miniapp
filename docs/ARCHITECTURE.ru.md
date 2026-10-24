@@ -22,7 +22,7 @@
 ## 1. Обзор
 
 **Продукт.** Магазин внутри Telegram, открывающийся как Mini App (WebApp
-внутри WebView Telegram). Пользователь проходит полный цикл покупки, не
+внутри WebView Telegram) и в обычном браузере. Пользователь проходит полный цикл покупки, не
 покидая мессенджер: каталог → корзина → оформление → оплата ЮKassa → история
 заказов в личном кабинете.
 
@@ -35,20 +35,20 @@
 - Корзина (клиентская, `localStorage`) с серверным пересчётом при оформлении.
 - Оформление заказа с адресом доставки.
 - Онлайн-оплата ЮKassa (тестовый магазин) + вебхук.
-- Личный кабинет: история заказов и статусы.
-- Авторизация через Telegram `initData` (HMAC-SHA256), сессия — JWT.
+- Личный кабинет: история заказов и статусы (с автообновлением).
+- Авторизация через Telegram `initData` (HMAC-SHA256) + Telegram Login Widget для десктопа/браузера.
 
 **Стек:**
 
 | Слой | Технологии |
 |---|---|
 | Backend | Python 3.11, FastAPI, SQLAlchemy 2.0 (async), Alembic, pydantic-settings, uvicorn |
-| Frontend | React 18, TypeScript, Vite, @tma.js/sdk (Telegram Mini App) |
-| БД | PostgreSQL 16 |
+| Frontend | React 19, TypeScript, Vite, Zustand |
+| БД | PostgreSQL 15 (в Docker) |
 | Платежи | ЮKassa (тестовый магазин) |
 | Безопасность | JWT (HS256), HMAC-SHA256, slowapi (rate limiting) |
-| Инфраструктура | Docker, Docker Compose, Nginx, Certbot (Let's Encrypt) |
-| Линтер | Ruff |
+| Инфраструктура | Docker, Docker Compose, Nginx, Certbot (Let's Encrypt), DuckDNS |
+| Линтер | Ruff, ESLint |
 
 ---
 
@@ -56,11 +56,11 @@
 
 ```mermaid
 flowchart LR
-    U[Пользователь<br/>в Telegram] -->|открывает| WA[WebView<br/>Mini App / React + TS]
+    U[Пользователь<br/>Telegram / Browser] -->|открывает| WA[WebView / Browser<br/>React + TS]
     WA -->|HTTPS| N[Nginx<br/>reverse-proxy + статика]
     N -->|статика| S[webapp/<br/>index.html, js, css]
     N -->|/api/* proxy| F[FastAPI<br/>uvicorn]
-    F -->|asyncpg| DB[(PostgreSQL 16<br/>в Docker)]
+    F -->|asyncpg| DB[(PostgreSQL 15<br/>в Docker)]
     F -->|HTTPS REST| YK[ЮKassa API<br/>создание платежа]
     YK -->|webhook| N
     F -.->|GET /v3/payments/{id}<br/>валидация вебхука| YK
@@ -68,124 +68,92 @@ flowchart LR
 
 **Роли компонентов:**
 
-- **WebView / Mini App** — SPA на React + TypeScript, собирается через Vite, интегрируется с Telegram через @tma.js/sdk. Дает компонентный подход и типизацию при работе с initData, themeParams, MainButton, BackButton.
-- **Nginx** — единая точка входа. Раздаёт статику из `webapp/`, проксирует
-  `/api/*` на FastAPI, терминирует SSL (Certbot).
-- **FastAPI** — вся бизнес-логика: авторизация, каталог, заказы, платежи,
-  вебхуки. Полностью асинхронный (async SQLAlchemy + asyncpg).
-- **PostgreSQL 16** — единственный источник истины по данным (пользователи,
-  товары, заказы).
-- **ЮKassa** — внешний провайдер платежей. Общение двустороннее: исходящие
-  запросы на создание платежа + входящие вебхуки о смене статуса.
+- **WebView / Mini App** — SPA на React + TypeScript, собирается через Vite. Работает как внутри Telegram, так и в браузере. Для браузера предусмотрен fallback-вход через Telegram Login Widget.
+- **Nginx** — единая точка входа. Раздаёт статику из `webapp/`, проксирует `/api/*` на FastAPI, терминирует SSL (Certbot).
+- **FastAPI** — вся бизнес-логика: авторизация, каталог, заказы, платежи, вебхуки. Полностью асинхронный (async SQLAlchemy + asyncpg).
+- **PostgreSQL 15** — единственный источник истины по данным.
+- **ЮKassa** — внешний провайдер платежей.
 
 ---
 
 ## 3. Потоки данных
 
-### 3.1. Авторизация через `initData`
+### 3.1. Авторизация (Mini App и Desktop Fallback)
+
+Для мобильного Telegram используется `initData`. Для браузера (или десктопного клиента, где `initData` пуст) используется **Telegram Login Widget**.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant C as Mini App
+    participant C as Frontend
     participant B as FastAPI
     participant DB as PostgreSQL
+    participant TG as Telegram OAuth
 
-    C->>C: window.Telegram.WebApp.initData
-    C->>B: POST /api/auth { initData }
-    B->>B: secret = HMAC_SHA256(key="WebAppData", msg=bot_token)
-    B->>B: hash = HMAC_SHA256(key=secret, msg=data_check_string)
-    B->>B: сравнить hash с initData.hash (constant-time)
-    B->>B: проверить auth_date (TTL 1 час)
+    alt Mobile App (initData)
+        C->>C: window.Telegram.WebApp.initData
+        C->>B: POST /api/v1/auth/ { initData }
+        B->>B: secret = HMAC_SHA256(key="WebAppData", msg=bot_token)
+        B->>B: hash = HMAC_SHA256(key=secret, msg=data_check_string)
+        B->>B: сравнить hash (constant-time)
+    else Desktop / Browser Fallback
+        C->>TG: Пользователь нажимает "Log in with Telegram"
+        TG-->>C: user_data + hash
+        C->>B: POST /api/v1/auth/widget { user_data, hash }
+        B->>B: secret = SHA256(bot_token)
+        B->>B: hash = HMAC_SHA256(key=secret, msg=data_check_string)
+        B->>B: сравнить hash (constant-time)
+    end
+
     B->>DB: UPSERT users по telegram_id
     B-->>C: JWT (HS256, TTL 24ч, sub=user_id)
     C->>B: Authorization: Bearer <JWT> (далее везде)
 ```
 
-- `data_check_string` — все поля `initData` (кроме `hash`), отсортированные
-  по алфавиту, склеенные через `\n` в формате `key=value`.
-- `auth_date` проверяется, чтобы защититься от replay-атак старым `initData`.
-- JWT — **stateless**; бэкенд не хранит сессии. TTL 24ч — компромисс между
-  безопасностью и UX (пользователь не логинится заново каждый час).
+- `data_check_string` — все поля (кроме `hash`), отсортированные по алфавиту, склеенные через `\n`.
+- **Важно:** секретный ключ для Mini App (`HMAC(bot_token, "WebAppData")`) отличается от секретного ключа для Login Widget (`SHA256(bot_token)`).
+- JWT — **stateless**; бэкенд не хранит сессии.
 
 ### 3.2. Каталог
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant C as Mini App
-    participant B as FastAPI
-    participant DB as PostgreSQL
-
-    C->>B: GET /api/categories
-    B->>DB: SELECT * FROM categories WHERE is_active
-    B-->>C: [{ id, slug, name }]
-
-    C->>B: GET /api/products?category_id=X&limit=20&offset=0
-    B->>DB: SELECT * FROM products WHERE ... (пагинация)
-    B-->>C: { items: [...], total }
-
-    C->>B: GET /api/products/{id}
-    B->>DB: SELECT * FROM products WHERE id=...
-    B-->>C: { id, name, price, description, stock, image_url }
-```
-
-Все эндпоинты каталога — **публичные** (JWT не требуется). Это осознанно:
-витрина должна открываться максимально быстро, без «прогрева» авторизации.
+Все эндпоинты каталога — **публичные** (JWT не требуется). Витрина открывается максимально быстро, без «прогрева» авторизации.
 
 ### 3.3. Заказ + оплата
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant C as Mini App
+    participant C as Frontend
     participant B as FastAPI
     participant DB as PostgreSQL
     participant YK as ЮKassa
 
-    C->>B: POST /api/orders { items:[{id,qty}], address, name, phone }
-    B->>DB: SELECT products WHERE id IN (...) — пересчёт цен и проверка stock
-    alt stock недостаточно / товар скрыт
-        B-->>C: 409 Conflict
-    else ок
-        B->>DB: INSERT orders (status='pending', total_amount=...)
-        B->>DB: INSERT order_items (price_at_purchase=текущая цена)
-        B-->>C: { order_id, total_amount }
-    end
+    C->>B: POST /api/v1/orders/ { items:[...], address, name, phone }
+    B->>DB: SELECT products ... — пересчёт цен и проверка stock
+    B->>DB: INSERT orders (status='pending')
+    B-->>C: { order_id, total_amount }
 
-    C->>B: POST /api/payments { order_id }
-    B->>YK: POST /v3/payments (Idempotence-Key=order_id+attempt)
+    C->>B: POST /api/v1/payments/ { order_id }
+    B->>YK: POST /v3/payments (Idempotence-Key)
     YK-->>B: { payment_id, confirmation_url }
     B->>DB: UPDATE orders SET payment_id=...
     B-->>C: { confirmation_url }
-    C->>C: location.href = confirmation_url (открывается в WebView)
 
-    YK->>Nginx: POST /api/webhooks/yukassa (JSON)
+    C->>C: tg.openLink(confirmation_url) -> navigate('/profile')
+
+    YK->>Nginx: POST /api/v1/webhooks/yookassa (JSON)
     Nginx->>B: proxy
-    B->>B: проверить source IP по CIDR-списку ЮKassa
     B->>YK: GET /v3/payments/{id} — независимая валидация статуса
     B->>DB: UPDATE orders SET status='paid', paid_at=now()
     B-->>YK: 200 OK
 
-    YK-->>C: redirect на return_url
-    C->>B: GET /api/orders/{id}
-    B-->>C: { status: 'paid', ... }
+    C->>B: (Polling every 5s) GET /api/v1/orders/
+    B-->>C: { status: 'paid', ... } (интерфейс обновляется)
 ```
 
-**Почему два шага (`/orders` + `/payments`), а не один?**
-
-- Заказ создаётся и фиксируется в БД **до** обращения в ЮKassa. Если ЮKassa
-  недоступна — заказ остаётся `pending`, пользователь может попробовать
-  оплатить позже (из личного кабинета).
-- Создание платежа — **идемпотентная** операция (`Idempotence-Key`), защищает
-  от дублей при повторных кликах.
-
-**Почему валидация через `GET /v3/payments/{id}`, а не только по подписи?**
-
-- Подпись вебхука + проверка IP — необходимые, но не достаточные условия.
-  Единственный **достоверный** источник статуса платежа — сам ЮKassa.
-  Мы запрашиваем статус напрямую перед обновлением заказа. Это защита от
-  подделки вебхука и от рассинхронизации.
+**Особенности реализации:**
+- Фронтенд использует **Polling** (опрос каждые 5 секунд) на странице «Профиль», если есть заказы в статусе `pending`. Это позволяет обновить статус на «Оплачен» без перезагрузки страницы, даже если вебхук пришел с задержкой.
+- При нажатии «Оплатить» фронтенд открывает ссылку через `tg.openLink()` и **сразу делает редирект** на страницу профиля, чтобы избежать зависания кнопки «Обработка...».
 
 ---
 
@@ -204,43 +172,17 @@ erDiagram
         bigint telegram_id UK "уникальный ID из TG"
         string username "может быть NULL"
         string first_name
-        string last_name "может быть NULL"
+        string last_name
         string language_code
         timestamptz created_at
         timestamptz updated_at
-    }
-    CATEGORIES {
-        int id PK
-        string slug UK
-        string name
-        int sort_order
-        bool is_active
-    }
-    PRODUCTS {
-        bigint id PK
-        int category_id FK
-        string name
-        text description
-        numeric price "≥ 0, 2 знака"
-        string image_url
-        bool is_active
-        timestamptz created_at
-        timestamptz updated_at
-    }
-    PRODUCT_VARIANTS {
-        bigint id PK
-        bigint product_id FK
-        string size "S, M, L, 42 и т.д."
-        string color "Белый, Черный и т.д."
-        string image_url "URL фото для этого цвета"
-        int stock "≥ 0"
     }
     ORDERS {
         bigint id PK
         bigint user_id FK
         string status "pending|paid|shipped|completed|cancelled"
         numeric total_amount
-        string payment_id "ID платежа в ЮKassa, NULL до оплаты"
+        string payment_id "ID платежа в ЮKassa"
         string delivery_address
         string customer_name
         string customer_phone
@@ -252,99 +194,36 @@ erDiagram
         bigint id PK
         bigint order_id FK
         bigint product_id FK
-        string product_name "снимок имени на момент заказа"
-        string variant_size "снимок размера на момент заказа"
-        string variant_color "снимок цвета на момент заказа"
-        numeric price_at_purchase "снимок цены на момент заказа"
+        string product_name "снимок имени"
+        string variant_size "снимок размера"
+        string variant_color "снимок цвета"
+        numeric price_at_purchase "снимок цены"
         int quantity
-        numeric subtotal "price_at_purchase * quantity"
+        numeric subtotal
     }
 ```
 
 **Ключевые решения по модели:**
-
-- **`order_items` хранит снимки** `product_name` и `price_at_purchase`, а не
-  только FK на `products`. Если товар переименуют или поменяют цену — история
-  заказа не «поедет». Это стандарт для e-commerce.
-- **`payment_id` и `paid_at`** — не статусы, но критичные поля: без
-  `payment_id` невозможно сопоставить вебхук с заказом, без `paid_at` —
-  построить историю.
-- **Денежные поля — `numeric`, не `float`.** Float даёт ошибки округления;
-  для денег это недопустимо.
-- **`status` — строка с CHECK-констрейнтом** (или Enum в SQLAlchemy).
-  Значения: `pending`, `paid`, `shipped`, `completed`, `cancelled`.
-
-**Конечный автомат статусов:**
-
-| Из | Событие | В |
-|---|---|---|
-| `pending` | вебхук `payment.succeeded` + валидация | `paid` |
-| `pending` | таймаут / ручная отмена | `cancelled` |
-| `paid` | отгрузка | `shipped` |
-| `shipped` | доставлено | `completed` |
-| `paid` | возврат (в MVP — вручную) | `cancelled` |
-
-Смена статуса — **только через единый обработчик** `transition(order, event)`,
-который проверяет допустимость перехода. Прямое присваивание `order.status = "paid"`
-в коде — запрещено (кроме самого обработчика).
+- **`order_items` хранит снимки** `product_name` и `price_at_purchase`, а не только FK. История заказа не «поедет» при изменении товара.
+- **Денежные поля — `numeric`, не `float`.** Float даёт ошибки округления; для денег это недопустимо.
+- **Конечный автомат статусов:** Смена статуса происходит только через единый обработчик `transition_status()`.
 
 ---
 
 ## 5. Безопасность
 
-### 5.1. Валидация `initData` (HMAC-SHA256)
-
-Алгоритм (официальный Telegram, [docs](https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app)):
-
-1. `secret_key = HMAC_SHA256(key="WebAppData", msg=bot_token)`
-2. `data_check_string` — все пары `key=value` из `initData`, **кроме `hash`**,
-   отсортированные по ключу и склеенные через `\n`.
-3. `computed_hash = HMAC_SHA256(key=secret_key, msg=data_check_string)`
-4. Сравнить `computed_hash` с `initData.hash` **в constant-time**
-   (`hmac.compare_digest`).
-5. Проверить `auth_date` — не старше 1 часа (защита от replay).
-
-Любое расхождение → `401 Unauthorized`. Никаких «мягких» режимов.
+### 5.1. Валидация HMAC
+- **Mini App:** `HMAC_SHA256(key="WebAppData", msg=bot_token)`.
+- **Login Widget:** `SHA256(bot_token)`.
+- В обоих случаях проверяется `auth_date` (TTL 1 час) для защиты от replay-атак.
 
 ### 5.2. JWT-сессии
-
-- Алгоритм: **HS256**, секрет — `JWT_SECRET` из `.env` (≥ 32 байта, генерируется
-  через `openssl rand -hex 32`).
+- Алгоритм: **HS256**, секрет — `JWT_SECRET` из `.env`.
 - Payload: `sub` (user_id), `iat`, `exp` (TTL 24ч).
 - Stateless: бэкенд не хранит сессий → горизонтальное масштабирование «из коробки».
-- Токен передаётся в `Authorization: Bearer <jwt>`.
 
-### 5.3. Rate limiting (slowapi)
-
-| Эндпоинт | Лимит | Зачем |
-|---|---|---|
-| `POST /api/auth` | 10/мин на IP | антибрутфорс initData |
-| `POST /api/orders` | 5/мин на пользователя | защита от спама заказами |
-| `GET /api/profile` | 30/мин на пользователя | защита от парсинга |
-
-При превышении → `429 Too Many Requests` с заголовком `Retry-After`.
-Для MVP хранилище в памяти; в README фиксируем: в проде — Redis.
-
-### 5.4. Вебхук ЮKassa
-
-Три уровня защиты:
-
-1. **Проверка `source.ip`** по CIDR-списку ЮKassa (список в `.env`).
-2. **Проверка подписи** тела запроса (SHA-256 HMAC из заголовка).
-3. **Независимая валидация** через `GET /v3/payments/{id}` к API ЮKassa.
-
-Даже если злоумышленник подделает запрос — п.3 отклонит его, потому что
-статус берётся напрямую у провайдера.
-
-### 5.5. Прочее
-
-- **SQL-инъекции:** исключены за счёт ORM (параметризованные запросы).
-- **XSS:** фронтенд вставляет данные через `textContent`, не `innerHTML`.
-- **CORS:** разрешён только origin Telegram Mini App (в проде — конкретный домен).
-- **Секреты:** только в `.env`, в репо — `.env.example` с пустыми значениями.
-- **HTTPS:** обязательный, через Certbot (Let's Encrypt).
-- **Валидация входа:** все тела запросов — Pydantic-модели со `strict`-режимом
-  где возможно; отказ от «лишних» полей.
+### 5.3. Вебхук ЮKassa
+Для защиты от подделки вебхука используется **только независимая валидация** через `GET /v3/payments/{id}` к API ЮKassa. IP-фильтрация в текущей версии отключена, так как обращение к API провайдера является 100% надежным способом подтверждения статуса.
 
 ---
 
@@ -352,16 +231,17 @@ erDiagram
 
 ```mermaid
 flowchart TB
-    subgraph VPS["VPS (Ubuntu 22.04)"]
+    subgraph VPS["VPS (Ubuntu 24.04)"]
         subgraph Docker["Docker Compose"]
             N[Nginx<br/>:80, :443]
             F[FastAPI<br/>:8000]
-            DB[(PostgreSQL 16<br/>:5432)]
+            DB[(PostgreSQL 15<br/>:5432)]
             CB[Certbot<br/>renew loop]
         end
         V1[(volume:<br/>postgres-data)]
         V2[(volume:<br/>certbot-certs)]
         V3[(volume:<br/>certbot-www)]
+        SW[(Swap: 3GB)]
     end
     N --> F
     F --> DB
@@ -372,173 +252,63 @@ flowchart TB
     Internet((Internet)) -->|80/443| N
 ```
 
-**Сервисы `docker-compose.yml`:**
-
-| Сервис | Образ | Роль |
-|---|---|---|
-| `nginx` | `nginx:alpine` | reverse-proxy + статика + SSL |
-| `backend` | build из `Dockerfile` | FastAPI + uvicorn |
-| `db` | `postgres:16-alpine` | PostgreSQL с volume |
-| `certbot` | `certbot/certbot` | выдача и автообновление сертификата |
-
-**Переменные `.env` (без значений, только ключи):**
-
-```
-# App
-APP_ENV=production
-APP_BASE_URL=https://<domain>
-API_PREFIX=/api
-
-# Database
-POSTGRES_USER=
-POSTGRES_PASSWORD=
-POSTGRES_DB=
-DATABASE_URL=postgresql+asyncpg://<user>:<pass>@db:5432/<db>
-
-# Telegram
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_BOT_USERNAME=
-
-# Auth
-JWT_SECRET=
-JWT_TTL_HOURS=24
-INIT_DATA_TTL_SECONDS=3600
-
-# ЮKassa
-YUKASSA_SHOP_ID=
-YUKASSA_SECRET_KEY=
-YUKASSA_RETURN_URL=https://<domain>/payment/return
-YUKASSA_WEBHOOK_IP_ALLOWLIST=
-
-# Rate limiting
-RATE_LIMIT_AUTH=10/minute
-RATE_LIMIT_ORDERS=5/minute
-RATE_LIMIT_PROFILE=30/minute
-```
+**Особенности деплоя на слабых VPS (2GB RAM):**
+- Создан **Swap-файл на 1 ГБ** для предотвращения падения системы (OOM Killer) при сборке образов.
+- Стратегия деплоя **«Локальная сборка -> Перенос» (Plan B)**: из-за нехватки RAM на VPS, Docker-образы (`backend.tar`, `frontend.tar`) собираются локально, переносятся по `scp` и загружаются на сервер через `docker load`. Это экономит ресурсы VPS и ускоряет процесс.
 
 ---
 
-## 7. Деплой и CI
+## 7. Деплой
 
-**Основной хостинг:** Oracle Cloud Always Free (Ubuntu VPS).
+**Хостинг:** obalko.sh (1 vCPU, 1GB RAM + 1GB Swap, 32GB NVMe, Ubuntu 24.04).
 
-1. Создать VM (Ubuntu 22.04, Ampere или AMD — что выдаст Oracle).
-2. Открыть порты 80/443 в Security List.
-3. Установить Docker + Docker Compose.
-4. Клонировать репозиторий, заполнить `.env`.
-5. `make up` — поднять сервисы.
-6. `make certbot-init` — получить первый сертификат Let's Encrypt.
-7. Настроить DNS A-запись домена на IP VM.
-8. Проверить `https://<domain>/health` → `{"status":"ok"}`.
-
-**Запасной хостинг** (если Oracle выдаст ошибку capacity): Google Cloud Run
-(backend, контейнер) + Aiven (managed PostgreSQL). Образы совместимы —
-разница только в способе деплоя.
+1. Установить Docker + Docker Compose.
+2. Настроить Swap (3 ГБ).
+3. Создать бесплатный домен на DuckDNS (`vm13-tg-shop.duckdns.org`).
+4. Получить SSL-сертификат Let's Encrypt (Certbot) в режиме `standalone`.
+5. Создать `.env.prod` с боевыми ключами.
+6. Запустить базу данных и бэкенд (`docker compose -f docker-compose.prod.yml up -d db backend`).
+7. Запустить Nginx и Certbot (`up -d`).
+8. Настроить домен в `@BotFather` (`/setdomain`).
+9. Настроить URL вебхуков в личном кабинете ЮKassa (`https://<domain>/api/v1/webhooks/yookassa`).
 
 **CI (GitHub Actions).** На каждый push и pull request в `main` запускается
-workflow `.github/workflows/ci.yml`:
-
-| Job | Что делает |
-|---|---|
-| `lint` | `ruff check .` и `ruff format --check .` |
-| `test` | поднимает PostgreSQL (service container), применяет `alembic upgrade head`, запускает `pytest` с покрытием |
-| `build` | собирает Docker-образ `backend` (без push) — проверка, что Dockerfile валиден |
-
-CI **не деплоит** автоматически (deploy — ручной, см. выше). Это осознанно:
-на MVP безопаснее контролировать выкладку вручную. Ветка `main` защищена —
-merge возможен только при зелёном CI.
+workflow `.github/workflows/ci.yml` (линтеры `ruff`, `eslint`, сборка `vite`, тесты `pytest`).
 
 ---
 
 ## 8. Допущения по нагрузке
 
 Проект рассчитан на **малый и средний бизнес**: один бренд, один бот.
+- MAU: 1k – 50k
+- RPS на API (пик): 50 – 200
+- SKU в каталоге: 10 – 5 000
 
-| Параметр | Оценка |
-|---|---|
-| Пользователи (MAU) | 1k – 50k |
-| Одновременные сессии | до 500 |
-| RPS на API (пик) | 50 – 200 |
-| SKU в каталоге | 10 – 5 000 |
-| Заказов в сутки | до 1 000 |
-| Объём БД (год) | ≤ 10 GB |
-
-Под эти цифры **одного** VPS + Docker Compose + PostgreSQL **достаточно**.
-Горизонтальное масштабирование (реплики БД, Redis, несколько инстансов API,
-CDN для статики) в MVP не нужно — но архитектура к нему готова:
-stateless-API и JWT позволяют добавить инстансы без изменений кода.
+Одного VPS + Docker Compose + PostgreSQL достаточно. Stateless-API и JWT позволяют добавить инстансы без изменений кода в будущем.
 
 ---
 
-## 9. Стандартные решения платформы и границы MVP
+## 9. Вне рамок MVP
 
-### 9.1. Стандарт для Telegram Mini App (не «урезание», а правильный паттерн)
-
-Эти решения — не компромисс, а **общепринятый стандарт** для Mini App:
-
-- **Авторизация только через Telegram `initData`.** Пароли и email в Mini App
-  не нужны: платформа даёт проверенную идентификацию через HMAC-подпись.
-  Это безопаснее и проще, чем классический логин/пароль.
-- **Уведомления только через Telegram-бота.** Пользователь уже в мессенджере —
-  email/SMS были бы лишним каналом и лишними расходами.
-
-### 9.2. Вне рамок MVP (осознанно вынесено)
-
-- **Админка** — товары и заказы заводятся через SQL/миграции; UI админки
-  появится во второй итерации.
-- **Серверная корзина** — синхронизация между устройствами (см. §10).
+- **Админка** — товары и заказы заводятся через SQL/миграции.
+- **Серверная корзина** — синхронизация между устройствами.
 - **Мультивалютность** — только RUB.
 - **Промокоды, скидки, акции.**
 - **Возвраты через ЮKassa** — в MVP обрабатываются вручную.
-- **Redis** — rate limit в памяти; в проде — Redis (отмечено в README).
-- **Мультиязычность** — интерфейс на русском.
-- **Автодеплой из CI** — CI проверяет, но не выкатывает (см. §7).
-
-Эти пункты не «забыли» — они вынесены за скоуп, чтобы MVP был сфокусированным
-и выпускался быстро. Каждый из них — очевидная точка роста.
+- **Redis** — rate limit в памяти; в проде при масштабировании — Redis.
 
 ---
 
 ## 10. Trade-offs (ADR-lite)
 
-Короткие архитектурные решения с обоснованием.
-
 | # | Решение | Обоснование |
 |---|---|---|
-| 1 | `pyjwt` для JWT | Вместо `python-jose`: активнее поддерживается, меньше зависимостей, чистый API. |
-| 2 | Корзина — `localStorage` | Для MVP проще и быстрее. Сервер **пересчитывает** цены при `POST /orders`. В проде при необходимости мигрируем на серверную корзину. |
-| 3 | JWT (stateless) | Горизонтальное масштабирование «из коробки», нет state на бэке. TTL 24ч приемлем для UX и безопасности. |
-| 4 | Двухшаговая оплата (`/orders` + `/payments`) | Заказ фиксируется до обращения к ЮKassa. Если ЮKassa недоступна — заказ `pending`, можно оплатить позже. |
-| 5 | Валидация вебхука через `GET /v3/payments/{id}` | Единственный достоверный источник статуса — сам ЮKassa. Защита от подделки вебхука и рассинхронизации. |
-| 6 | `slowapi` (in-memory) | Для MVP на одном инстансе достаточно. В README отмечено: в проде — Redis. |
-| 7 | Снимки `product_name`/`price_at_purchase` в `order_items` | История заказа не «поедет» при изменении товара. Стандарт e-commerce. |
-| 8 | `numeric` для денег | Float даёт ошибки округления, для денег это недопустимо. |
-| 9 | Единый обработчик переходов статусов | Защита от «статусного хаоса» и расхождений с платежами. |
-| 10 | Mermaid в документации | GitHub и VS Code рендерят нативно. Читается быстрее, не «плывёт». |
-| 11 | GitHub Actions (без автодеплоя) | CI ловит регрессии на каждом PR; деплой на MVP оставлен ручным — безопаснее и проще откатывать. |
-| 12 | Frontend: React + TS + Vite | Современный, масштабируемый стек. Экосистема React имеет готовые SDK для Telegram (`@tma.js`), а TypeScript снижает количество багов при росте проекта. |
-| 13 | Отдельная таблица `product_variants` (SKU) для размеров | Хранение массива размеров в JSON-поле таблицы `products` | Позволяет вести точный учёт остатков для каждого размера отдельно. Упрощает добавление новых размеров и предотвращает продажу несуществующих остатков. |
-| 14 | Адаптивная вёрстка (Mobile-First + CSS Grid) | Фиксированная мобильная сетка (только 2 колонки) | Telegram Mini Apps открываются не только на смартфонах, но и в Desktop/Web. Использование CSS Grid с `auto-fill` позволяет каталогу корректно перестраиваться под любую ширину экрана без дублирования кода. |
-| 15 | Привязка `image_url` к `ProductVariant` (SKU) | Хранение одной общей картинки в таблице `products` | Позволяет динамически менять фотографию товара при выборе цвета в карточке, что критически важно для визуального e-commerce и повышает конверсию. |
-
----
-
-## 11. Тестирование вебхуков локально
-
-Для проверки уведомлений от ЮKassa на локальной машине используется туннель **Tuna** (так как ngrok и Cloudflare могут блокироваться в РФ).
-
-1. Установите Tuna: `winget install --id yuccastream.tuna -e`
-2. Авторизуйтесь: `tuna config save-token <ваш_токен>`
-3. Запустите туннель к бэкенду: `tuna http 8000`
-4. Скопируйте публичный URL (например, `https://xxxx.ru.tuna.am`) и укажите его в ЮKassa (Интеграция -> HTTP-уведомления) с суффиксом `/api/v1/webhooks/yukassa`.
-5. Проведите тестовый платеж. В окне Tuna и в логах бэкенда появится запрос `POST /api/v1/webhooks/yukassa` со статусом `200 OK`.
-
----
-
-## Приложение. Ссылки
-
-- Telegram Mini Apps: <https://core.telegram.org/bots/webapps>
-- Валидация `initData`: <https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app>
-- ЮKassa API: <https://yookassa.ru/developers/api>
-- FastAPI: <https://fastapi.tiangolo.com/>
-- SQLAlchemy 2.0 async: <https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html>
+| 1 | `pyjwt` для JWT | Активнее поддерживается, меньше зависимостей, чистый API. |
+| 2 | Корзина — `localStorage` | Для MVP проще и быстрее. Сервер пересчитывает цены при создании заказа. |
+| 3 | JWT (stateless) | Горизонтальное масштабирование «из коробки», нет state на бэке. |
+| 4 | Двухшаговая оплата (`/orders` + `/payments`) | Заказ фиксируется до ЮKassa. Если она недоступна — заказ `pending`. |
+| 5 | Валидация вебхука через `GET /v3/payments/{id}` | Единственный достоверный источник статуса — сам ЮKassa. Защита от подделки. |
+| 6 | Polling (опрос) вместо WebSockets | В Mini App WebSockets требуют дополнительной поддержки. Для MVP опрос профиля раз в 5 секунд решает проблему обновления статуса без лишних затрат. |
+| 7 | Telegram Login Widget для Desktop | Позволяет безопасно (через OAuth) авторизоваться в браузере, где `initData` недоступен. |
+| 8 | `numeric` для денег | Float даёт ошибки округления. |
+| 9 | Сборка образов локально (`docker save`/`load`) | Экономия RAM на VPS (2 ГБ), предотвращение падений при сборке Node.js/Python. |

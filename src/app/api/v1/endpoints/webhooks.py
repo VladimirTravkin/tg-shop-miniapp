@@ -12,7 +12,7 @@ from src.app.models.order import Order, OrderStatus
 router = APIRouter()
 
 
-@router.post("/yukassa")
+@router.post("/yookassa")
 async def yukassa_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchUserOrders, type Order, type OrderStatus } from '../api/orders';
+import { TelegramLogin } from '../components/TelegramLogin';
+import { authenticateWidget, type TelegramWidgetData } from '../api/authWidget';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
     pending: 'Ожидает оплаты',
@@ -10,9 +12,9 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 const STATUS_COLORS: Record<OrderStatus, { bg: string; color: string }> = {
-    pending: { bg: '#fff4e5', color: '#b26a00' },
-    paid: { bg: '#e6f4ea', color: '#1e7e34' },
-    shipped: { bg: '#e6f0ff', color: '#0b5ed7' },
+    pending:   { bg: '#fff4e5', color: '#b26a00' },
+    paid:      { bg: '#e6f4ea', color: '#1e7e34' },
+    shipped:   { bg: '#e6f0ff', color: '#0b5ed7' },
     completed: { bg: '#e6f4ea', color: '#1e7e34' },
     cancelled: { bg: '#ffe6e6', color: '#d8000c' },
 };
@@ -172,36 +174,74 @@ export function ProfilePage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [needsDesktopAuth, setNeedsDesktopAuth] = useState(false);
+
+    const loadOrders = async (silent = false) => {
+        if (!silent) setLoading(true);
+        setError(null);
+        try {
+            const data = await fetchUserOrders();
+            setOrders(data);
+            setNeedsDesktopAuth(false);
+        } catch (err: any) {
+            console.error(err);
+            if (err.response?.status === 401) {
+                if (!window.Telegram?.WebApp?.initData) {
+                    setNeedsDesktopAuth(true);
+                } else {
+                    setError('Требуется авторизация через Telegram.');
+                }
+            } else {
+                if (!silent) setError('Не удалось загрузить историю заказов. Попробуйте позже.');
+            }
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        let cancelled = false;
-
-        const load = async () => {
-            try {
-                const data = await fetchUserOrders();
-                if (!cancelled) setOrders(data);
-            } catch (err: unknown) {
-                console.error(err);
-                if (!cancelled) {
-                    const axiosError = err as { response?: { status?: number } };
-                    const message = axiosError.response?.status === 401
-                        ? 'Требуется авторизация через Telegram.'
-                        : 'Не удалось загрузить историю заказов. Попробуйте позже.';
-                    setError(message);
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-
-        load();
-        return () => { cancelled = true; };
+        loadOrders();
     }, []);
+
+    useEffect(() => {
+        // Проверяем, есть ли заказы, ожидающие оплаты
+        const hasPending = orders.some((o) => o.status === 'pending');
+        if (!hasPending) return;
+
+        // Если есть, запускаем тихое обновление каждые 5 секунд
+        const interval = setInterval(() => {
+            loadOrders(true);
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [orders]);
+
+    const handleWidgetAuth = async (userData: TelegramWidgetData) => {
+        const success = await authenticateWidget(userData);
+        if (success) {
+            // После успешного входа виджета перезагружаем заказы
+            loadOrders();
+        } else {
+            setError('Ошибка авторизации через виджет.');
+        }
+    };
 
     if (loading) {
         return (
             <div style={{ padding: '40px 20px', textAlign: 'center', color: '#666' }}>
                 Загрузка заказов...
+            </div>
+        );
+    }
+
+    if (needsDesktopAuth) {
+        return (
+            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>Вход в личный кабинет</h2>
+                <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>
+                    Вы открыли приложение с компьютера. Войдите через Telegram, чтобы увидеть историю заказов.
+                </p>
+                <TelegramLogin botName="VM13TgShopBot" onAuth={handleWidgetAuth} />
             </div>
         );
     }

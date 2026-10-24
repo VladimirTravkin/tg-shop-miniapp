@@ -55,6 +55,7 @@ def validate_init_data(init_data: str, bot_token: str) -> dict[str, Any]:
     return parsed_data
 
 
+
 def create_access_token(subject: int) -> str:
     """
     Create JWT access token.
@@ -70,3 +71,41 @@ def create_access_token(subject: int) -> str:
         algorithm=settings.JWT_ALGORITHM
     )
     return encoded_jwt
+
+
+def validate_widget_data(data: dict[str, Any], bot_token: str) -> dict[str, Any]:
+    """
+    Validate Telegram Login Widget data using HMAC-SHA256.
+    Note: Widget uses SHA256(bot_token) as the secret key, unlike Mini App.
+    """
+    if "hash" not in data:
+        raise ValueError("Missing hash")
+
+    received_hash = data.pop("hash")
+
+    # 1. Create data_check_string (skip None values)
+    data_check_list = [
+        f"{key}={value}" for key, value in sorted(data.items()) if value is not None
+    ]
+    data_check_string = "\n".join(data_check_list)
+
+    # 2. Calculate secret key (SHA256 of bot token for Widget)
+    secret_key = hashlib.sha256(bot_token.encode()).digest()
+
+    # 3. Calculate computed hash
+    computed_hash = hmac.new(
+        key=secret_key,
+        msg=data_check_string.encode(),
+        digestmod=hashlib.sha256
+    ).hexdigest()
+
+    # 4. Compare in constant-time
+    if not hmac.compare_digest(computed_hash, received_hash):
+        raise ValueError("Invalid hash")
+
+    # 5. Validate auth_date (TTL 1 day for widget)
+    auth_date = int(data.get("auth_date", 0))
+    if time.time() - auth_date > 86400:
+        raise ValueError("Widget data has expired")
+
+    return data

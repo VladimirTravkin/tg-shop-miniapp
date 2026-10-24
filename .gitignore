@@ -31,3 +31,8 @@ build/
 cloudflared.exe
 ngrok.exe
 tuna.exe
+
+# Local build artifacts
+*.tar
+*.tar.gz
+*.tgz
