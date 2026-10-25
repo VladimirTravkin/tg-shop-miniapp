@@ -1,6 +1,6 @@
 import pytest
-from src.app.models.order import Order, OrderStatus
 from src.app.core.order_status import transition_status
+from src.app.models.order import Order, OrderStatus
 
 
 def test_valid_transition():

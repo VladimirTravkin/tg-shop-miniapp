@@ -7,7 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.api.deps import get_current_user
 from src.app.core.config import settings
 from src.app.core.limiter import limiter
-from src.app.core.security import create_access_token, validate_init_data, validate_widget_data
+from src.app.core.security import (
+    create_access_token,
+    validate_init_data,
+    validate_widget_data,
+)
 from src.app.db.session import get_db
 from src.app.models.user import User
 from src.app.schemas.auth import AuthRequest, AuthResponse, WidgetAuthRequest

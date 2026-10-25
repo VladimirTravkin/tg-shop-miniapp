@@ -1,10 +1,11 @@
-import time
-import hmac
 import hashlib
+import hmac
+import time
 from urllib.parse import urlencode
-import pytest
 
-from src.app.core.security import validate_init_data, create_access_token
+import pytest
+from src.app.core.security import create_access_token, validate_init_data
+
 
 # Helper function to generate valid Telegram initData for testing
 def generate_valid_init_data(bot_token: str, user_id: int, auth_date: int = None) -> str:
