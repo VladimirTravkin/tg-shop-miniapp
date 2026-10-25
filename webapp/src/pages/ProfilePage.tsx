@@ -12,9 +12,9 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 const STATUS_COLORS: Record<OrderStatus, { bg: string; color: string }> = {
-    pending:   { bg: '#fff4e5', color: '#b26a00' },
-    paid:      { bg: '#e6f4ea', color: '#1e7e34' },
-    shipped:   { bg: '#e6f0ff', color: '#0b5ed7' },
+    pending: { bg: '#fff4e5', color: '#b26a00' },
+    paid: { bg: '#e6f4ea', color: '#1e7e34' },
+    shipped: { bg: '#e6f0ff', color: '#0b5ed7' },
     completed: { bg: '#e6f4ea', color: '#1e7e34' },
     cancelled: { bg: '#ffe6e6', color: '#d8000c' },
 };
@@ -183,9 +183,11 @@ export function ProfilePage() {
             const data = await fetchUserOrders();
             setOrders(data);
             setNeedsDesktopAuth(false);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            if (err.response?.status === 401) {
+            const axiosError = err as { response?: { status?: number } };
+            if (axiosError.response?.status === 401) {
+                // ... (оставляем как было)
                 if (!window.Telegram?.WebApp?.initData) {
                     setNeedsDesktopAuth(true);
                 } else {
@@ -200,7 +202,10 @@ export function ProfilePage() {
     };
 
     useEffect(() => {
-        loadOrders();
+        const timer = setTimeout(() => {
+            loadOrders();
+        }, 0);
+        return () => clearTimeout(timer);
     }, []);
 
     useEffect(() => {
