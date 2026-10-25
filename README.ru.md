@@ -2,12 +2,15 @@
 
 [English](README.md) | **Русский**
 
+[![Telegram Bot](https://img.shields.io/badge/Telegram-Открыть_магазин-blue?logo=telegram)](https://t.me/VM13TgShopBot)
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
+
+> 🚀 **Живое демо:** [Открыть магазин в Telegram](https://t.me/VM13TgShopBot)
 
 Полноценный E-commerce Telegram Mini App. Проект включает в себя каталог товаров, удобную корзину, оформление заказа, безопасную интеграцию с платежной системой ЮKassa и личный кабинет с историей заказов.
 

@@ -2,12 +2,15 @@
 
 **English** | [Русский](README.ru.md)
 
+[![Telegram Bot](https://img.shields.io/badge/Telegram-Open_Shop-blue?logo=telegram)](https://t.me/VM13TgShopBot)
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
+
+> 🚀 **Live Demo:** [Open Shop in Telegram](https://t.me/VM13TgShopBot)
 
 A full-stack E-commerce Telegram Mini App. The project features a product catalog, shopping cart, checkout process, secure YooKassa payment integration, and a user profile with order history.
 
