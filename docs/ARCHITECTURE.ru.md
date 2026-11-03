@@ -63,7 +63,7 @@ flowchart LR
     F -->|asyncpg| DB[(PostgreSQL 15<br/>в Docker)]
     F -->|HTTPS REST| YK[ЮKassa API<br/>создание платежа]
     YK -->|webhook| N
-    F -.->|GET /v3/payments/{id}<br/>валидация вебхука| YK
+    F -.->|GET /v3/payments/id<br/>валидация вебхука| YK
 ```
 
 **Роли компонентов:**
